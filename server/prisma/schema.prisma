@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String       @id @default(uuid())
+  name          String
+  email         String       @unique
+  password_hash String
+  role          Role         @default(STUDENT)
+  enrollments   Enrollment[]
+  progress      Progress[]
+  created_at    DateTime     @default(now())
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+model Course {
+  id          String       @id @default(uuid())
+  title       String
+  description String
+  cover_url   String?
+  modules     Module[]
+  enrollments Enrollment[]
+  created_at  DateTime     @default(now())
+}
+
+model Module {
+  id        String   @id @default(uuid())
+  title     String
+  course_id String
+  course    Course   @relation(fields: [course_id], references: [id])
+  lessons   Lesson[]
+}
+
+model Lesson {
+  id           String     @id @default(uuid())
+  title        String
+  video_url    String?
+  content_text String?
+  duration     Int?
+  module_id    String
+  module       Module     @relation(fields: [module_id], references: [id])
+  progress     Progress[]
+}
+
+model Enrollment {
+  user_id      String
+  course_id    String
+  user         User      @relation(fields: [user_id], references: [id])
+  course       Course    @relation(fields: [course_id], references: [id])
+  enrolled_at  DateTime  @default(now())
+  completed_at DateTime?
+
+  @@id([user_id, course_id])
+}
+
+model Progress {
+  user_id      String
+  lesson_id    String
+  user         User    @relation(fields: [user_id], references: [id])
+  lesson       Lesson  @relation(fields: [lesson_id], references: [id])
+  is_completed Boolean @default(false)
+
+  @@id([user_id, lesson_id])
+}
