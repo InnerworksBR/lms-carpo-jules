@@ -1,10 +1,27 @@
-function App() {
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext.js'
+import { LoginPage } from './pages/LoginPage.js'
+import { Dashboard } from './pages/Dashboard.js'
+import { ProtectedRoute } from './routes/ProtectedRoute.js'
+import { Layout } from './components/Layout.js'
+
+export function App() {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-blue-600">
-        LMS Corporativo - Fase 1
-      </h1>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Layout><Dashboard /></Layout>} />
+            {/* Adicione outras rotas protegidas aqui */}
+            <Route path="/courses" element={<Layout><div>Página de Cursos (Fase 4)</div></Layout>} />
+            <Route path="/users" element={<Layout><div>Gestão de Usuários (Em breve)</div></Layout>} />
+            <Route path="/settings" element={<Layout><div>Configurações (Em breve)</div></Layout>} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 
