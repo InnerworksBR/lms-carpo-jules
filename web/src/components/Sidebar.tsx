@@ -22,6 +22,7 @@ export function Sidebar() {
   ]
 
   if (user?.role === 'ADMIN') {
+    menuItems.push({ name: 'Gerenciar Cursos', path: '/admin/courses', icon: BookOpen })
     menuItems.push({ name: 'Usuários', path: '/users', icon: Users })
   }
 

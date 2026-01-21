@@ -9,6 +9,8 @@ import { fileURLToPath } from 'url'
 import { authRoutes } from './routes/auth.js'
 import { courseRoutes } from './routes/courses.js'
 import { moduleRoutes } from './routes/modules.js'
+import { lessonRoutes } from './routes/lessons.js'
+import { progressRoutes } from './routes/progress.js'
 import { uploadRoutes } from './routes/upload.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -55,6 +57,8 @@ fastify.register(fastifyStatic, {
 fastify.register(authRoutes, { prefix: '/auth' })
 fastify.register(courseRoutes, { prefix: '/courses' })
 fastify.register(moduleRoutes, { prefix: '/modules' })
+fastify.register(lessonRoutes, { prefix: '/lessons' })
+fastify.register(progressRoutes, { prefix: '/progress' })
 fastify.register(uploadRoutes, { prefix: '/upload' })
 
 fastify.get('/', async () => {
