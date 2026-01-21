@@ -34,7 +34,23 @@ export function CourseDetails() {
   const [course, setCourse] = useState<Course | null>(null)
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null)
   const [progress, setProgress] = useState<Progress | null>(null)
+  const [isEnrolled, setIsEnrolled] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isEnrolling, setIsEnrolling] = useState(false)
+
+  async function handleEnroll() {
+    try {
+      setIsEnrolling(true)
+      await api.post(`/courses/${id}/enroll`)
+      setIsEnrolled(true)
+      const progressRes = await api.get(`/progress/course/${id}`)
+      setProgress(progressRes.data)
+    } catch (error) {
+      console.error('Erro ao se inscrever:', error)
+    } finally {
+      setIsEnrolling(false)
+    }
+  }
 
   async function handleLessonEnd() {
     if (!currentLesson) return
@@ -52,15 +68,19 @@ export function CourseDetails() {
   useEffect(() => {
     async function loadCourse() {
       try {
-        const [courseRes, progressRes] = await Promise.all([
+        const [courseRes, progressRes, allCoursesRes] = await Promise.all([
           api.get(`/courses/${id}`),
-          api.get(`/progress/course/${id}`)
+          api.get(`/progress/course/${id}`).catch(() => ({ data: null })),
+          api.get('/courses')
         ])
 
         setCourse(courseRes.data)
         setProgress(progressRes.data)
 
-        // Auto-select first lesson if available
+        const currentCourse = allCoursesRes.data.find((c: any) => c.id === id)
+        setIsEnrolled(currentCourse?.is_enrolled || false)
+
+        // Auto-select first lesson if available and enrolled
         if (courseRes.data.modules.length > 0 && courseRes.data.modules[0].lessons.length > 0) {
           setCurrentLesson(courseRes.data.modules[0].lessons[0])
         }
@@ -89,7 +109,19 @@ export function CourseDetails() {
   return (
     <div className="flex flex-col lg:flex-row gap-8">
       <div className="flex-1">
-        {currentLesson ? (
+        {!isEnrolled ? (
+          <div className="bg-white p-12 rounded-lg shadow-sm border border-gray-100 text-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{course.title}</h2>
+            <p className="text-gray-600 mb-8 max-w-lg mx-auto">{course.description}</p>
+            <button
+              onClick={handleEnroll}
+              disabled={isEnrolling}
+              className="bg-blue-600 text-white px-8 py-3 rounded-md font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {isEnrolling ? 'Inscrevendo...' : 'Começar Agora'}
+            </button>
+          </div>
+        ) : currentLesson ? (
           <div className="bg-black aspect-video rounded-lg overflow-hidden shadow-lg mb-6">
             {currentLesson.video_url ? (
               <video
@@ -112,20 +144,27 @@ export function CourseDetails() {
           </div>
         )}
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {currentLesson?.title || course.title}
-          </h1>
-          <p className="text-gray-600 whitespace-pre-wrap">
-            {currentLesson?.content_text || course.description}
-          </p>
-        </div>
+        {isEnrolled && (
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {currentLesson?.title || course.title}
+            </h1>
+            <p className="text-gray-600 whitespace-pre-wrap">
+              {currentLesson?.content_text || course.description}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="w-full lg:w-80 flex-shrink-0">
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden sticky top-8">
-          <div className="p-4 border-b border-gray-100 bg-gray-50">
-            <h2 className="font-bold text-gray-900">Conteúdo do Curso</h2>
+          <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <h2 className="font-bold text-gray-900">Conteúdo</h2>
+            {isEnrolled && progress && (
+              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                {progress.percentage}%
+              </span>
+            )}
           </div>
 
           <div className="divide-y divide-gray-100 overflow-y-auto max-h-[calc(100vh-200px)]">
@@ -142,12 +181,13 @@ export function CourseDetails() {
                     return (
                       <button
                         key={lesson.id}
+                        disabled={!isEnrolled}
                         onClick={() => setCurrentLesson(lesson)}
                         className={`
                           w-full text-left p-3 rounded-md text-sm transition-colors flex items-center group
                           ${currentLesson?.id === lesson.id
                             ? 'bg-blue-50 text-blue-600'
-                            : 'hover:bg-gray-50 text-gray-600'}
+                            : isEnrolled ? 'hover:bg-gray-50 text-gray-600' : 'text-gray-300 cursor-not-allowed'}
                         `}
                       >
                         {isCompleted ? (

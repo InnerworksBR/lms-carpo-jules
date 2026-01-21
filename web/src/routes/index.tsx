@@ -3,6 +3,7 @@ import { Login } from '../pages/Login'
 import { Dashboard } from '../pages/Dashboard'
 import { CourseDetails } from '../pages/CourseDetails'
 import { AdminCourses } from '../pages/AdminCourses'
+import { UserManagement } from '../pages/UserManagement'
 import { DefaultLayout } from '../layouts/DefaultLayout'
 import { PrivateRoute } from '../components/PrivateRoute'
 
@@ -16,6 +17,7 @@ export function Router() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/courses/:id" element={<CourseDetails />} />
           <Route path="/admin/courses" element={<AdminCourses />} />
+          <Route path="/users" element={<UserManagement />} />
           {/* Outras rotas virão aqui */}
         </Route>
       </Route>

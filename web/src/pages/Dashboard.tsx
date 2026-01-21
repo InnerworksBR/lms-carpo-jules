@@ -11,6 +11,7 @@ interface Course {
   _count: {
     modules: number
   }
+  is_enrolled: boolean
   progress?: {
     percentage: number
   }
@@ -18,26 +19,14 @@ interface Course {
 
 export function Dashboard() {
   const [courses, setCourses] = useState<Course[]>([])
+  const [activeTab, setActiveTab] = useState<'all' | 'my'>('all')
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     async function loadCourses() {
       try {
         const response = await api.get('/courses')
-        const coursesData = response.data
-
-        const coursesWithProgress = await Promise.all(
-          coursesData.map(async (course: any) => {
-            try {
-              const progressRes = await api.get(`/progress/course/${course.id}`)
-              return { ...course, progress: progressRes.data }
-            } catch {
-              return course
-            }
-          })
-        )
-
-        setCourses(coursesWithProgress)
+        setCourses(response.data)
       } catch (error) {
         console.error('Erro ao carregar cursos:', error)
       } finally {
@@ -56,17 +45,46 @@ export function Dashboard() {
     )
   }
 
+  const filteredCourses = activeTab === 'my'
+    ? courses.filter(c => c.is_enrolled)
+    : courses
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Meus Cursos</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard de Cursos</h1>
 
-      {courses.length === 0 ? (
+        <div className="flex bg-gray-100 p-1 rounded-lg">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+              activeTab === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Todos os Cursos
+          </button>
+          <button
+            onClick={() => setActiveTab('my')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+              activeTab === 'my' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Meus Cursos
+          </button>
+        </div>
+      </div>
+
+      {filteredCourses.length === 0 ? (
         <div className="bg-white p-12 rounded-lg shadow-sm border border-gray-100 text-center">
-          <p className="text-gray-500">Nenhum curso disponível no momento.</p>
+          <p className="text-gray-500">
+            {activeTab === 'my'
+              ? 'Você ainda não se inscreveu em nenhum curso.'
+              : 'Nenhum curso disponível no momento.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
+          {filteredCourses.map((course) => (
             <Link
               key={course.id}
               to={`/courses/${course.id}`}
