@@ -26,12 +26,51 @@ export async function courseRoutes(fastify: FastifyInstance) {
       where: { user_id: user.sub }
     })
 
-    const coursesWithEnrollment = courses.map(course => {
-      const enrollment = enrollments.find(e => e.course_id === course.id)
+    const progress = await prisma.progress.findMany({
+      where: {
+        user_id: user.sub,
+        is_completed: true
+      },
+      include: {
+        lesson: {
+          select: {
+            module: {
+              select: { course_id: true }
+            }
+          }
+        }
+      }
+    })
+
+    const lessonsCount = await prisma.lesson.groupBy({
+      by: ['module_id'],
+      _count: true
+    })
+
+    const modules = await prisma.module.findMany({
+      select: { id: true, course_id: true }
+    })
+
+    const coursesWithEnrollment = courses.map((course: any) => {
+      const enrollment = enrollments.find((e: any) => e.course_id === course.id)
+
+      // Calculate progress percentage
+      const courseModules = modules.filter((m: any) => m.course_id === course.id).map((m: any) => m.id)
+      const totalLessons = lessonsCount
+        .filter((lc: any) => courseModules.includes(lc.module_id))
+        .reduce((acc: number, curr: any) => acc + curr._count, 0)
+
+      const completedLessons = progress.filter((p: any) => p.lesson.module.course_id === course.id).length
+
+      const progress_percentage = totalLessons > 0
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : 0
+
       return {
         ...course,
         is_enrolled: !!enrollment,
-        completed_at: enrollment?.completed_at || null
+        completed_at: enrollment?.completed_at || null,
+        progress_percentage: !!enrollment ? progress_percentage : 0
       }
     })
 
@@ -94,7 +133,48 @@ export async function courseRoutes(fastify: FastifyInstance) {
       return reply.status(404).send({ message: 'Course not found' })
     }
 
-    return course
+    // Try to get enrollment and progress info if user is authenticated
+    let user: any = null
+    try {
+      user = await request.jwtVerify()
+    } catch (err) {
+      // Not authenticated
+      return course
+    }
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        user_id_course_id: {
+          user_id: user.sub,
+          course_id: id
+        }
+      }
+    })
+
+    const progress = await prisma.progress.findMany({
+      where: {
+        user_id: user.sub,
+        lesson: {
+          module: {
+            course_id: id
+          }
+        }
+      }
+    })
+
+    const courseWithProgress = {
+      ...course,
+      is_enrolled: !!enrollment,
+      modules: course.modules.map((module: any) => ({
+        ...module,
+        lessons: module.lessons.map((lesson: any) => ({
+          ...lesson,
+          is_completed: progress.find((p: any) => p.lesson_id === lesson.id)?.is_completed || false
+        }))
+      }))
+    }
+
+    return courseWithProgress
   })
 
   // Create course (Admin only)

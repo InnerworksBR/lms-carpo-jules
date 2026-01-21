@@ -61,12 +61,38 @@ export function LessonPlayer() {
       if (!response.data.is_enrolled) {
         // Automatically enroll for simplicity or redirect to detail page
         await api.post(`/courses/${courseId}/enroll`)
+        // Reload to get enrollment status updated
+        const updatedResponse = await api.get(`/courses/${courseId}`)
+        setCourse(updatedResponse.data)
       }
     } catch (error) {
       console.error(error)
       alert('Erro ao carregar curso')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleLessonEnd() {
+    if (!currentLesson || currentLesson.is_completed) return
+
+    try {
+      await api.post(`/progress/lesson/${currentLesson.id}`)
+      // Update local state
+      setCourse(prev => {
+        if (!prev) return null
+        return {
+          ...prev,
+          modules: prev.modules.map(m => ({
+            ...m,
+            lessons: m.lessons.map(l =>
+              l.id === currentLesson.id ? { ...l, is_completed: true } : l
+            )
+          }))
+        }
+      })
+    } catch (error) {
+      console.error('Error marking lesson as completed:', error)
     }
   }
 
@@ -102,6 +128,7 @@ export function LessonPlayer() {
                 controls
                 className="w-full h-full"
                 autoPlay
+                onEnded={() => handleLessonEnd()}
               />
             </div>
           ) : (
