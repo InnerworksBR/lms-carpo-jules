@@ -9,6 +9,7 @@ interface Course {
   description: string
   cover_url: string | null
   is_enrolled: boolean
+  progress_percentage?: number
   _count: {
     modules: number
   }
@@ -101,6 +102,21 @@ function CourseCard({ course }: { course: Course }) {
       <div className="p-4 flex-1 flex flex-col">
         <h3 className="font-bold text-gray-900 mb-2 line-clamp-1">{course.title}</h3>
         <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-1">{course.description}</p>
+
+        {course.is_enrolled && (
+          <div className="mb-4">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-gray-500">Progresso</span>
+              <span className="font-medium text-blue-600">{course.progress_percentage || 0}%</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${course.progress_percentage || 0}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-between mt-auto">
           <span className="text-xs text-gray-500 flex items-center">

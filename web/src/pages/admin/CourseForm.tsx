@@ -238,7 +238,7 @@ export function CourseForm() {
                           </label>
                         )}
                         <button
-                          onClick={() => handleDeleteLesson(lessonId, module.id)}
+                          onClick={() => handleDeleteLesson(lesson.id, module.id)}
                           className="text-gray-400 hover:text-red-600"
                         >
                           <Trash2 size={16} />

@@ -11,6 +11,7 @@ import { courseRoutes } from './routes/courses.js'
 import { moduleRoutes } from './routes/modules.js'
 import { lessonRoutes } from './routes/lessons.js'
 import { uploadRoutes } from './routes/upload.js'
+import { progressRoutes } from './routes/progress.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -58,6 +59,7 @@ fastify.register(courseRoutes, { prefix: '/courses' })
 fastify.register(moduleRoutes, { prefix: '/modules' })
 fastify.register(lessonRoutes, { prefix: '/lessons' })
 fastify.register(uploadRoutes, { prefix: '/upload' })
+fastify.register(progressRoutes, { prefix: '/progress' })
 
 fastify.get('/', async () => {
   return { status: 'ok', version: '1.0.0' }
