@@ -18,10 +18,10 @@ export function Sidebar() {
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { name: 'Cursos', path: '/courses', icon: BookOpen },
   ]
 
   if (user?.role === 'ADMIN') {
+    menuItems.push({ name: 'Gerenciar Cursos', path: '/admin/courses', icon: BookOpen })
     menuItems.push({ name: 'Usuários', path: '/users', icon: Users })
   }
 

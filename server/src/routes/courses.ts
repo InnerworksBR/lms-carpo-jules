@@ -12,7 +12,64 @@ export async function courseRoutes(fastify: FastifyInstance) {
         }
       }
     })
-    return courses
+
+    // Try to get enrollment info if user is authenticated
+    let user: any = null
+    try {
+      user = await request.jwtVerify()
+    } catch (err) {
+      // Not authenticated, just return courses without enrollment info
+      return courses
+    }
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: { user_id: user.sub }
+    })
+
+    const coursesWithEnrollment = courses.map(course => {
+      const enrollment = enrollments.find(e => e.course_id === course.id)
+      return {
+        ...course,
+        is_enrolled: !!enrollment,
+        completed_at: enrollment?.completed_at || null
+      }
+    })
+
+    return coursesWithEnrollment
+  })
+
+  // Enroll in a course
+  fastify.post('/:id/enroll', {
+    onRequest: [fastify.authenticate]
+  }, async (request, reply) => {
+    const paramsSchema = z.object({
+      id: z.string().uuid()
+    })
+    const { id } = paramsSchema.parse(request.params)
+
+    const course = await prisma.course.findUnique({
+      where: { id }
+    })
+
+    if (!course) {
+      return reply.status(404).send({ message: 'Course not found' })
+    }
+
+    const enrollment = await prisma.enrollment.upsert({
+      where: {
+        user_id_course_id: {
+          user_id: request.user.sub,
+          course_id: id
+        }
+      },
+      update: {},
+      create: {
+        user_id: request.user.sub,
+        course_id: id
+      }
+    })
+
+    return reply.status(201).send(enrollment)
   })
 
   // Get course by ID
